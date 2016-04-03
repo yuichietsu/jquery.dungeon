@@ -1008,6 +1008,7 @@
 				g_access_map3d_object.is3D = !g_access_map3d_object.is3D;
 				break;
 			}
+			return false;
 		};
 
 		this.keyUp = function(_event) {
