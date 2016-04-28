@@ -1,5 +1,10 @@
 # jquery.dungeon
 
+## DEMO
+
+* http://codepen.io/yuichietsu/pen/QNpKvr
+* http://codepen.io/yuichietsu/pen/pyWqxR
+
 ## USAGE
 
 See samples.
