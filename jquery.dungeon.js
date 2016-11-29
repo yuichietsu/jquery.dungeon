@@ -70,7 +70,7 @@
 			c = $('<canvas />');
 			do {
 				id = 'dungeon_' + canvasIndex++;
-			} while ($(id).size() > 0);
+			} while ($('#' + id).size() > 0);
 			c.attr('id', id);
 			c.attr('tabindex', 0);
 			c.attr('width', opts.width);
