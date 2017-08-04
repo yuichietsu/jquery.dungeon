@@ -1,9 +1,9 @@
 # jquery.dungeon
 
-## DEMO
+## SAMPLES
 
-* http://codepen.io/yuichietsu/pen/QNpKvr
-* http://codepen.io/yuichietsu/pen/pyWqxR
+* http://yuichietsu.github.io/jquery.dungeon/sample/sample1.html
+* http://yuichietsu.github.io/jquery.dungeon/sample/sample1.html
 
 ## USAGE
 
