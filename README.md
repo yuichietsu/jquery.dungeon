@@ -3,7 +3,7 @@
 ## SAMPLES
 
 * http://yuichietsu.github.io/jquery.dungeon/sample/sample1.html
-* http://yuichietsu.github.io/jquery.dungeon/sample/sample1.html
+* http://yuichietsu.github.io/jquery.dungeon/sample/sample2.html
 
 ## USAGE
 
