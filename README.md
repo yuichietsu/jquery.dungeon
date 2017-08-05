@@ -2,8 +2,8 @@
 
 ## SAMPLES
 
-* https://yuichietsu.github.io/jquery.dungeon/sample/sample1.html
-* https://yuichietsu.github.io/jquery.dungeon/sample/sample2.html
+* [Sample1](https://yuichietsu.github.io/jquery.dungeon/sample/sample1.html)
+* [Sample2](https://yuichietsu.github.io/jquery.dungeon/sample/sample2.html)
 
 ## USAGE
 
