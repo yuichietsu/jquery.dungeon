@@ -9,9 +9,14 @@
 
 See samples.
 
+## CHANGELOG
+
+### 2017/08/06
+
+* Improved 2D rendering performance
+
 ## TODO
 
 * Ramdom map generator
 * Display Images
-* Improve 2D rendering performance
 * Texture
