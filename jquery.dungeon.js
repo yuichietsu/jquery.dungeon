@@ -110,6 +110,7 @@
 		this.canvasTop = 0;
 		this.aspect = 0;
 		this.ctx = null;
+		this.canvasCache = {};
 
 		// マップ
 		this.map = Array();
@@ -808,11 +809,8 @@
 						this.visibleObjects = this.sortBSP(this.visibleObjects);
 					}
 				}
-				this.ctx.fillStyle = "rgb( 0, 0, 0)";
-				this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-				var renderingCanvasSize = (this.canvasWidth < this.canvasHeight ? this.canvasWidth
-						: this.canvasHeight);
+				var renderingCanvasSize = (this.canvasWidth < this.canvasHeight ? this.canvasWidth : this.canvasHeight);
 				var renderingSize = renderingCanvasSize / this.mapSize;
 				var renderingFar = this.clipFar * renderingSize / this.chipSize;
 				var offsetX = (this.canvasWidth - renderingCanvasSize) / 2;
@@ -820,31 +818,36 @@
 				var px = this.yourX * renderingSize + offsetX;
 				var py = this.yourY * renderingSize + offsetY;
 
-				for (var y = 0; y < this.mapSize; y++) {
-					for (var x = 0; x < this.mapSize; x++) {
-						var value = this.map[y * this.mapSize + x];
-						switch (value) {
-						case MAP_TYPE_WAY:
-							this.ctx.fillStyle = 'rgb(255,255,255)';
-							this.ctx.fillRect(x * renderingSize + offsetX, y
-									* renderingSize + offsetY, renderingSize,
-									renderingSize);
-							break;
-						case MAP_TYPE_START:
-							this.ctx.fillStyle = 'rgb(0,0,255)';
-							this.ctx.fillRect(x * renderingSize + offsetX, y
-									* renderingSize + offsetY, renderingSize,
-									renderingSize);
-							break;
-						default:
-							if (typeof value == 'string') {
-								this.ctx.fillStyle = 'rgb(0,255,0)';
-								this.ctx.fillRect(x * renderingSize + offsetX,
-										y * renderingSize + offsetY,
-										renderingSize, renderingSize);
+				if (! this.drawCache('Map2D')) {
+					this.ctx.fillStyle = "rgb( 0, 0, 0)";
+					this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+					for (var y = 0; y < this.mapSize; y++) {
+						for (var x = 0; x < this.mapSize; x++) {
+							var value = this.map[y * this.mapSize + x];
+							switch (value) {
+							case MAP_TYPE_WAY:
+								this.ctx.fillStyle = 'rgb(255,255,255)';
+								this.ctx.fillRect(x * renderingSize + offsetX, y
+										* renderingSize + offsetY, renderingSize,
+										renderingSize);
+								break;
+							case MAP_TYPE_START:
+								this.ctx.fillStyle = 'rgb(0,0,255)';
+								this.ctx.fillRect(x * renderingSize + offsetX, y
+										* renderingSize + offsetY, renderingSize,
+										renderingSize);
+								break;
+							default:
+								if (typeof value == 'string') {
+									this.ctx.fillStyle = 'rgb(0,255,0)';
+									this.ctx.fillRect(x * renderingSize + offsetX,
+											y * renderingSize + offsetY,
+											renderingSize, renderingSize);
+								}
 							}
 						}
 					}
+					this.saveCache('Map2D');
 				}
 
 				if (this.isDebug) {
@@ -907,6 +910,24 @@
 				this.ctx.stroke();
 
 			}
+		};
+
+		this.saveCache = function(name) {
+			var cache = new Image();
+			cache.src = this.cnv.toDataURL();	
+			this.canvasCache[name] = cache; 
+		};
+
+		this.loadCache = function(name) {
+			return this.canvasCache[name];
+		};
+
+		this.drawCache = function(name) {
+			var cache = this.loadCache(name);
+			if (cache) {
+				this.ctx.drawImage(cache, 0, 0);
+			}
+			return cache;
 		};
 
 		// 視点移動
