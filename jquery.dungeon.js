@@ -547,6 +547,16 @@
 			return (left.concat(center)).concat(right);
 		};
 
+		this.drawGround = function() {
+			// 天井と床の描画
+			var grad = this.ctx.createLinearGradient(0, 0, 0, this.canvasHeight);
+			grad.addColorStop(0, '#aaa');
+			grad.addColorStop(0.5, '#000');
+			grad.addColorStop(1, '#baa');
+			this.ctx.fillStyle = grad;
+			this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+		};
+
 		// 壁描画
 		this.drawWall = function(_px, _py, _sx, _sy, _ex, _ey) {
 
@@ -619,22 +629,12 @@
 			}
 		};
 
-		// 3Dマップ描画
-		this.drawMap3D = function() {
+		this.culling = function() {
 			// プレイヤー位置
 			var px = this.yourX * this.chipSize;
 			var py = this.yourY * this.chipSize;
 
 			var renderingBlocks = Array();
-
-			// 天井と床の描画
-			var grad = this.ctx
-					.createLinearGradient(0, 0, 0, this.canvasHeight);
-			grad.addColorStop(0, '#aaa');
-			grad.addColorStop(0.5, '#000');
-			grad.addColorStop(1, '#baa');
-			this.ctx.fillStyle = grad;
-			this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
 			// 視野カリング
 			for (var y = 0; y < this.mapSize; y++) {
@@ -769,8 +769,9 @@
 
 				this.updateViewer();
 				this.visibleObjects = Array();
-
-				this.drawMap3D();
+				
+				this.drawGround();
+				this.culling();
 				if (0 < this.visibleObjects.length) {
 					this.visibleObjects = this.sortBSP(this.visibleObjects);
 				}
@@ -802,7 +803,7 @@
 				this.updateViewer();
 				if (this.isDebug) {
 					this.visibleObjects = Array();
-					this.drawMap3D();
+					this.culling();
 					if (0 < this.visibleObjects.length) {
 						this.visibleObjects = this.sortBSP(this.visibleObjects);
 					}
