@@ -913,9 +913,7 @@
 		};
 
 		this.saveCache = function(name) {
-			var cache = new Image();
-			cache.src = this.cnv.toDataURL();	
-			this.canvasCache[name] = cache; 
+			this.canvasCache[name] = this.ctx.getImageData(0, 0, this.canvasWidth, this.canvasHeight); 
 		};
 
 		this.loadCache = function(name) {
@@ -925,7 +923,7 @@
 		this.drawCache = function(name) {
 			var cache = this.loadCache(name);
 			if (cache) {
-				this.ctx.drawImage(cache, 0, 0);
+				this.ctx.putImageData(cache, 0, 0);
 			}
 			return cache;
 		};
