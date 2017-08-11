@@ -1,5 +1,16 @@
 (function($) {
 
+	var maps = {};
+	var canvasIndex = 0;
+	var defaults = {
+		'width' : 640,
+		'height' : 480,
+		'debug' : false,
+		'wrapper' : null,
+		'drawType' : 'normal',
+		'events' : {}
+	};
+
 	function convertToMap(data) {
 		var mapData = [];
 		var lines = data.split("\n");
@@ -42,54 +53,70 @@
 		};
 	}
 
-	var canvasIndex = 0;
-	var defaults = {
-		'width' : 640,
-		'height' : 480,
-		'debug' : false,
-		'wrapper' : null,
-		'events' : {}
+	var methods = {
+		
+		'init': function(options) {
+			var opts = $.extend(true, {}, defaults, options);
+			return this.each(function() {
+				var $this = $(this);
+				var map3d;
+				var id = $this.data('mapId');
+				if (id) {
+					$('#' + id).remove();
+					delete maps[id];
+				}
+				var data = $this.val();
+				var map = convertToMap(data);
+				var c;
+				c = $('<canvas />');
+				do {
+					id = 'dungeon_' + canvasIndex++;
+				} while ($('#' + id).size() > 0);
+				c.attr('id', id);
+				c.attr('tabindex', 0);
+				c.attr('width', opts.width);
+				c.attr('height', opts.height);
+				if (opts.wrapper) {
+					$(opts.wrapper).html('').append(c);
+				} else {
+					$this.after(c);
+				}
+				c.hide();
+				map3d = new Map3D(id);
+				map3d.isDebug = opts.debug;
+				map3d.events = opts.events;
+				map3d.setDrawType(opts.drawType);
+				map3d.init();
+				map3d.loadMap(map.size, map.map);
+				c.fadeIn('fast');
+				maps[id] = map3d;
+				$this.data('mapId', id);
+			});
+		},
+
+		'drawType': function(type) {
+			return this.each(function() {
+				var $this = $(this);
+				var m, id = $this.data('mapId');
+				if (id && (m = maps[id])) {
+					m.setDrawType(type);
+				}
+			});
+		}
+
 	};
-	var maps = {};
 
-	$.fn.dungeon = function(options) {
+	$.fn.dungeon = function(method) {
+		if (methods[method]) {
+			return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+		}
+		else if (typeof method === 'object' || ! method) {
+			return methods.init.apply(this, arguments);
+		}
+		else {
+			$.error('jQuery.dungeon: Method does not exists');
+		}
 
-		var opts = $.extend(true, {}, defaults, options);
-
-		return this.each(function() {
-			var $this = $(this);
-			var map3d;
-			var id = $this.data('mapId');
-			if (id) {
-				$('#' + id).remove();
-				delete maps[id];
-			}
-			var data = $this.val();
-			var map = convertToMap(data);
-			var c;
-			c = $('<canvas />');
-			do {
-				id = 'dungeon_' + canvasIndex++;
-			} while ($('#' + id).size() > 0);
-			c.attr('id', id);
-			c.attr('tabindex', 0);
-			c.attr('width', opts.width);
-			c.attr('height', opts.height);
-			if (opts.wrapper) {
-				$(opts.wrapper).html('').append(c);
-			} else {
-				$this.after(c);
-			}
-			c.hide();
-			map3d = new Map3D(id);
-			map3d.isDebug = opts.debug;
-			map3d.events = opts.events;
-			map3d.init();
-			map3d.loadMap(map.size, map.map);
-			c.fadeIn('fast');
-			maps[id] = map3d;
-			$this.data('mapId', id);
-		});
 	};
 
 	// 定数
@@ -139,6 +166,11 @@
 		this.idleLoop = null;
 		this.is3D = true;
 		this.isDebug = true;
+
+		this.currentDrawType = 'normal';
+		this.drawGroundImpl = drawGroundNormal;
+		this.drawWallColorImpl = drawWallColorNormal;
+		this.drawWallImpl = drawWallNormal;
 
 		// 操作
 		this.pressedKeyUp = false;
@@ -196,15 +228,10 @@
 			this.initMap();
 		};
 
-		// マップ初期化
 		this.initMap = function() {
-			// 閾値
 			this.chipSizeTh = this.chipSize * Math.SQRT2 / 2;
-			// 遠方クリップ
 			this.clipFar = 400;
-			// 近傍クリップ
 			this.clipNear = 0.5;
-			// パースペクティブ
 			this.perspective = this.canvasWidth / 2 / Math.tan(this.yourFovxh);
 		};
 
@@ -548,17 +575,31 @@
 			return (left.concat(center)).concat(right);
 		};
 
+		this.setDrawType = function(type) {
+			switch (type) {
+				case 'wire':
+				case 'wireframe':
+				case 'wiz':
+				case 'wizardry':
+					this.currentDrawType = 'wireframe';
+					this.drawGroundImpl = drawGroundWire;
+					this.drawWallColorImpl = drawWallColorWire;
+					this.drawWallImpl = drawWallWire;
+					break;	
+				default:
+					this.currentDrawType = 'normal';
+					this.drawGroundImpl = drawGroundNormal;
+					this.drawWallColorImpl = drawWallColorNormal;
+					this.drawWallImpl = drawWallNormal;
+					break;
+			}
+		};
+
 		this.drawGround = function() {
-			// 天井と床の描画
-			var grad = this.ctx.createLinearGradient(0, 0, 0, this.canvasHeight);
-			grad.addColorStop(0, '#aaa');
-			grad.addColorStop(0.5, '#000');
-			grad.addColorStop(1, '#baa');
-			this.ctx.fillStyle = grad;
+			this.drawGroundImpl();
 			this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 		};
 
-		// 壁描画
 		this.drawWall = function(_px, _py, _sx, _sy, _ex, _ey) {
 
 			var wallHeight = 10.0;
@@ -607,26 +648,17 @@
 				var sx = this.centerX - pos * scale;
 				var sty = this.centerY + (this.manHeight - wallHeight) * scale;
 				var sby = this.centerY + this.manHeight * scale;
+				
+				this.drawWallColorImpl(fx, sx, fdepth, sdepth);
 
-				var fcol = Math.floor(255 * (1 - (fdepth - this.clipNear)
-						/ (this.clipFar - this.clipNear)));
-				var scol = Math.floor(255 * (1 - (sdepth - this.clipNear)
-						/ (this.clipFar - this.clipNear)));
-				var grad = this.ctx.createLinearGradient(fx, 0, sx, 0);
-				grad.addColorStop(0, 'rgb(' + fcol + ',' + fcol + ',' + fcol
-						+ ')');
-				grad.addColorStop(1, 'rgb(' + scol + ',' + scol + ',' + scol
-						+ ')');
-				this.ctx.fillStyle = grad;
 				this.ctx.beginPath();
-
 				this.ctx.moveTo(fx, fby);
 				this.ctx.lineTo(fx, fty);
 				this.ctx.lineTo(sx, sty);
 				this.ctx.lineTo(sx, sby);
-
 				this.ctx.closePath();
-				this.ctx.fill();
+
+				this.drawWallImpl();
 			}
 		};
 
@@ -819,7 +851,7 @@
 				var py = this.yourY * renderingSize + offsetY;
 
 				if (! this.drawCache('Map2D')) {
-					this.ctx.fillStyle = "rgb( 0, 0, 0)";
+					this.ctx.fillStyle = "rgb(0, 0, 0)";
 					this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 					for (var y = 0; y < this.mapSize; y++) {
 						for (var x = 0; x < this.mapSize; x++) {
@@ -1129,10 +1161,47 @@
 			this.unbindLoop();
 			this.unbindKey();
 		}
+
 		this.resume = function() {
 			g_access_map3d_object.bindKey();
 			g_access_map3d_object.bindLoop();
 		};
+
+		function drawGroundNormal() {
+			var grad = this.ctx.createLinearGradient(0, 0, 0, this.canvasHeight);
+			grad.addColorStop(0, '#aaa');
+			grad.addColorStop(0.5, '#000');
+			grad.addColorStop(1, '#baa');
+			this.ctx.fillStyle = grad;
+		}
+
+		function drawGroundWire() {
+			this.ctx.fillStyle = "rgb(0, 0, 0)";
+		}
+
+		function drawWallColorNormal(fx, sx, fdepth, sdepth) {
+			var fcol = Math.floor(255 * (1 - (fdepth - this.clipNear) / (this.clipFar - this.clipNear)));
+			var scol = Math.floor(255 * (1 - (sdepth - this.clipNear) / (this.clipFar - this.clipNear)));
+			var grad = this.ctx.createLinearGradient(fx, 0, sx, 0);
+			grad.addColorStop(0, 'rgb(' + fcol + ',' + fcol + ',' + fcol + ')');
+			grad.addColorStop(1, 'rgb(' + scol + ',' + scol + ',' + scol + ')');
+			this.ctx.fillStyle = grad;
+		}
+
+		function drawWallColorWire(fx, sx, fdepth, sdepth) {
+			this.ctx.fillStyle = 'rgb(0,0,0)';
+			this.ctx.strokeStyle = 'rgb(255,255,255)';
+		}
+
+		function drawWallNormal() {
+			this.ctx.fill();
+		}
+
+		function drawWallWire() {
+			this.ctx.fill();
+			this.ctx.stroke();
+		}
+
 	}
 
 })(jQuery);
