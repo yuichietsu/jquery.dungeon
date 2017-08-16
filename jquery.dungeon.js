@@ -990,12 +990,25 @@
 			return cache;
 		};
 
+		this.updateEvents = function(px, py) {
+			var position = py * this.mapSize + px;
+			var data = this.map[position];
+			if (this.prePosition != position) {
+				if (this.prePosition) {
+					this.fire('leave', this.preData);
+				}
+				this.fire('enter', data);
+			}
+			this.fire('over', data);
+			this.preData = data;
+			this.prePosition = position;
+		};
 
 		this.fire = function(event, data) {
 			if (this.events[event]) {
 				this.events[event](this, data);
 			}
-		}
+		};
 
 		// 操作、キー押下
 		this.keyDown = function(_event) {
@@ -1217,17 +1230,7 @@
 			}
 
 			if (moved) {
-				var position = py * this.mapSize + px;
-				var data = this.map[position];
-				if (this.prePosition != position) {
-					if (this.prePosition) {
-						this.fire('leave', this.preData);
-					}
-					this.fire('enter', data);
-				}
-				this.fire('over', data);
-				this.preData = data;
-				this.prePosition = position;
+				this.updateEvents(px, py);
 			}
 		}
 
@@ -1260,7 +1263,6 @@
 					this.yourY = nY;
 					moved = true;
 				}
-
 			}
 			if (this.pressedKeyDown) {
 				this.pressedKeyDown = false;
@@ -1269,17 +1271,7 @@
 			}
 
 			if (moved) {
-				var position = py * this.mapSize + px;
-				var data = this.map[position];
-				if (this.prePosition != position) {
-					if (this.prePosition) {
-						this.fire('leave', this.preData);
-					}
-					this.fire('enter', data);
-				}
-				this.fire('over', data);
-				this.preData = data;
-				this.prePosition = position;
+				this.updateEvents(px, py);
 			}
 		}
 
