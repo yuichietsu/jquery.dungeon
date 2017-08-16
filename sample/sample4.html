@@ -5,12 +5,12 @@
 <script type="text/javascript" src="../jquery.dungeon.js"></script>
 <script>
 $(function() {
-	$('.floor').dungeon({
+	var opts = {
 		'debug' : true,
 		'width' : 320,
 		'height' : 240,
 		'drawType' : 'wire',
-		'moveType' : 'grid',
+		'moveType' : 'snap',
 		'events' : {
 			'enter' : function(map, data) {
 				switch(data) {
@@ -33,7 +33,10 @@ $(function() {
 				}
 			}
 		}
-	}).hide();
+	};
+	$('#floor1').dungeon(opts).hide();
+	opts.moveType = 'normal';
+	$('#floor2').dungeon(opts).hide();
 
 	$('input[name="drawType"]').click(function() {
 		var type = $(this).val();

@@ -592,12 +592,15 @@
 
 		this.setMoveType = function(type) {
 			switch (type) {
+				case 'snap':
 				case 'grid':
 				case 'wiz':
 				case 'wizardry':
 					this.currentMoveType = 'grid';
 					this.updateViewer = updateViewerGrid;
 					break;	
+				case 'normal':
+				case 'smooth':
 				default:
 					this.currentMoveType = 'normal';
 					this.updateViewer = updateViewerNormal;
@@ -616,6 +619,7 @@
 					this.drawWallColorImpl = drawWallColorWire;
 					this.drawWallImpl = drawWallWire;
 					break;	
+				case 'normal':
 				default:
 					this.currentDrawType = 'normal';
 					this.drawGroundImpl = drawGroundNormal;
