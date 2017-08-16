@@ -8,6 +8,7 @@
 		'debug' : false,
 		'wrapper' : null,
 		'drawType' : 'normal',
+		'moveType' : 'normal',
 		'events' : {}
 	};
 
@@ -102,6 +103,16 @@
 					m.setDrawType(type);
 				}
 			});
+		},
+
+		'moveType': function(type) {
+			return this.each(function() {
+				var $this = $(this);
+				var m, id = $this.data('mapId');
+				if (id && (m = maps[id])) {
+					m.setMoveType(type);
+				}
+			});
 		}
 
 	};
@@ -126,7 +137,7 @@
 
 	function Map3D(_id) {
 
-		var g_access_map3d_object = this;
+		var thisMap = this;
 
 		// キャンバス情報
 		this.cnvId = _id;
@@ -166,6 +177,8 @@
 		this.idleLoop = null;
 		this.is3D = true;
 		this.isDebug = true;
+
+		this.currentMoveType = 'normal';
 
 		this.currentDrawType = 'normal';
 		this.drawGroundImpl = drawGroundNormal;
@@ -573,6 +586,19 @@
 				right = this.sortBSP(right);
 			}
 			return (left.concat(center)).concat(right);
+		};
+
+		this.setMoveType = function(type) {
+			switch (type) {
+				case 'grid':
+				case 'wiz':
+				case 'wizardry':
+					this.currentMoveType = 'grid';
+					break;	
+				default:
+					this.currentMoveType = 'normal';
+					break;
+			}
 		};
 
 		this.setDrawType = function(type) {
@@ -1055,48 +1081,48 @@
 
 		// 操作、キー押下
 		this.keyDown = function(_event) {
-			switch (g_access_map3d_object.checkKey(_event, true)) {
+			switch (thisMap.checkKey(_event, true)) {
 			case 32: // space
-				g_access_map3d_object.is3D = !g_access_map3d_object.is3D;
+				thisMap.is3D = !thisMap.is3D;
 				break;
 			}
 			return false;
 		};
 
 		this.keyUp = function(_event) {
-			g_access_map3d_object.checkKey(_event, false);
+			thisMap.checkKey(_event, false);
 		};
 
 		this.checkKey = function(_event, _on) {
 			var key = window.event ? window.event.keyCode : _event.keyCode;
 			switch (key) {
 			case 37: // left
-				g_access_map3d_object.pressedKeyLeft = _on;
+				thisMap.pressedKeyLeft = _on;
 				break;
 			case 39: // right
-				g_access_map3d_object.pressedKeyRight = _on;
+				thisMap.pressedKeyRight = _on;
 				break;
 			case 38: // up
-				g_access_map3d_object.pressedKeyUp = _on;
+				thisMap.pressedKeyUp = _on;
 				break;
 			case 40: // down
-				g_access_map3d_object.pressedKeyDown = _on;
+				thisMap.pressedKeyDown = _on;
 				break;
 			}
 			return key;
 		};
 
 		this.clearKey = function() {
-			g_access_map3d_object.pressedKeyLeft = false;
-			g_access_map3d_object.pressedKeyRight = false;
-			g_access_map3d_object.pressedKeyUp = false;
-			g_access_map3d_object.pressedKeyDown = false;
+			thisMap.pressedKeyLeft = false;
+			thisMap.pressedKeyRight = false;
+			thisMap.pressedKeyUp = false;
+			thisMap.pressedKeyDown = false;
 		};
 
 		this.bindLoop = function() {
 			if (this.idleLoop == null) {
 				this.idleLoop = setInterval(function() {
-					g_access_map3d_object.draw();
+					thisMap.draw();
 				}, 1000 / this.fps);
 			}
 		};
@@ -1121,27 +1147,27 @@
 		};
 
 		this.mouseDown = function(_ev) {
-			g_access_map3d_object.mouseDragging = true;
-			g_access_map3d_object.mouseStartX = _ev.offsetX;
-			g_access_map3d_object.mouseStartY = _ev.offsetY;
+			thisMap.mouseDragging = true;
+			thisMap.mouseStartX = _ev.offsetX;
+			thisMap.mouseStartY = _ev.offsetY;
 		};
 
 		this.mouseMove = function(_ev) {
-			if (g_access_map3d_object.mouseDragging) {
+			if (thisMap.mouseDragging) {
 				var x = _ev.offsetX;
 				var y = _ev.offsetY;
-				var dX = x - g_access_map3d_object.mouseStartX;
-				var dY = y - g_access_map3d_object.mouseStartY;
-				g_access_map3d_object.yourAngle += dX * 0.5 * Math.PI / 180;
-				g_access_map3d_object.yourAngle += dY * 0.5 * Math.PI / 180;
-				g_access_map3d_object.updateClip();
-				g_access_map3d_object.mouseStartX = x;
-				g_access_map3d_object.mouseStartY = y;
+				var dX = x - thisMap.mouseStartX;
+				var dY = y - thisMap.mouseStartY;
+				thisMap.yourAngle += dX * 0.5 * Math.PI / 180;
+				thisMap.yourAngle += dY * 0.5 * Math.PI / 180;
+				thisMap.updateClip();
+				thisMap.mouseStartX = x;
+				thisMap.mouseStartY = y;
 			}
 		};
 
 		this.mouseUp = function(_ev) {
-			g_access_map3d_object.mouseDragging = false;
+			thisMap.mouseDragging = false;
 		};
 
 		this.unbindKey = function() {
@@ -1163,8 +1189,8 @@
 		}
 
 		this.resume = function() {
-			g_access_map3d_object.bindKey();
-			g_access_map3d_object.bindLoop();
+			thisMap.bindKey();
+			thisMap.bindLoop();
 		};
 
 		function drawGroundNormal() {
