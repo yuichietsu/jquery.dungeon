@@ -87,6 +87,7 @@
 				map3d.isDebug = opts.debug;
 				map3d.events = opts.events;
 				map3d.setDrawType(opts.drawType);
+				map3d.setMoveType(opts.moveType);
 				map3d.init();
 				map3d.loadMap(map.size, map.map);
 				c.fadeIn('fast');
@@ -179,6 +180,7 @@
 		this.isDebug = true;
 
 		this.currentMoveType = 'normal';
+		this.updateViewer = updateViewerNormal;
 
 		this.currentDrawType = 'normal';
 		this.drawGroundImpl = drawGroundNormal;
@@ -594,9 +596,11 @@
 				case 'wiz':
 				case 'wizardry':
 					this.currentMoveType = 'grid';
+					this.updateViewer = updateViewerGrid;
 					break;	
 				default:
 					this.currentMoveType = 'normal';
+					this.updateViewer = updateViewerNormal;
 					break;
 			}
 		};
@@ -986,92 +990,6 @@
 			return cache;
 		};
 
-		// 視点移動
-		// プレイヤーの位置などを更新
-		this.updateViewer = function() {
-			var moved = false;
-			var nX = 0;
-			var nY = 0;
-			var px = 0;
-			var py = 0;
-
-			if (this.pressedKeyLeft) {
-				this.yourAngle -= this.yourRotateSpeed;
-				this.updateClip();
-			}
-			if (this.pressedKeyRight) {
-				this.yourAngle += this.yourRotateSpeed;
-				this.updateClip();
-			}
-			if (this.pressedKeyUp) {
-				var speed = this.yourSpeed / this.fps / this.chipSize;
-				nX = this.yourX + speed * this.eyeX;
-				nY = this.yourY + speed * this.eyeY;
-				px = Math.floor(nX);
-				py = Math.floor(nY);
-				if (this.map[py * this.mapSize + px] != 1) {
-					var cx = nX % 1;
-					var cy = nY % 1;
-					if (cx < 0.1 && this.map[py * this.mapSize + px - 1] == 1) {
-						nX = Math.floor(nX) + 0.1;
-					}
-					if (0.9 < cx && this.map[py * this.mapSize + px + 1] == 1) {
-						nX = Math.floor(nX) + 0.9;
-					}
-					if (cy < 0.1 && this.map[(py - 1) * this.mapSize + px] == 1) {
-						nY = Math.floor(nY) + 0.1;
-					}
-					if (0.9 < cy && this.map[(py + 1) * this.mapSize + px] == 1) {
-						nY = Math.floor(nY) + 0.9;
-					}
-					this.yourX = nX;
-					this.yourY = nY;
-					moved = true;
-				}
-
-			}
-			if (this.pressedKeyDown) {
-				var speed = this.yourSpeed / this.fps / this.chipSize;
-				nX = this.yourX - speed * this.eyeX;
-				nY = this.yourY - speed * this.eyeY;
-				px = Math.floor(nX);
-				py = Math.floor(nY);
-				if (this.map[py * this.mapSize + px] != 1) {
-					var cx = nX % 1;
-					var cy = nY % 1;
-					if (cx < 0.1 && this.map[py * this.mapSize + px - 1] == 1) {
-						nX = Math.floor(nX) + 0.1;
-					}
-					if (0.9 < cx && this.map[py * this.mapSize + px + 1] == 1) {
-						nX = Math.floor(nX) + 0.9;
-					}
-					if (cy < 0.1 && this.map[(py - 1) * this.mapSize + px] == 1) {
-						nY = Math.floor(nY) + 0.1;
-					}
-					if (0.9 < cy && this.map[(py + 1) * this.mapSize + px] == 1) {
-						nY = Math.floor(nY) + 0.9;
-					}
-					this.yourX = nX;
-					this.yourY = nY;
-					moved = true;
-				}
-
-			}
-
-			if (moved) {
-				var position = py * this.mapSize + px;
-				var data = this.map[position];
-				if (this.prePosition != position) {
-					if (this.prePosition) {
-						this.fire('leave', this.preData);
-					}
-					this.fire('enter', data);
-				}
-				this.fire('over', data);
-				this.preData = data;
-				this.prePosition = position;
-			}
-		};
 
 		this.fire = function(event, data) {
 			if (this.events[event]) {
@@ -1226,6 +1144,143 @@
 		function drawWallWire() {
 			this.ctx.fill();
 			this.ctx.stroke();
+		}
+
+		function updateViewerNormal() {
+			var moved = false;
+			var nX = 0;
+			var nY = 0;
+			var px = 0;
+			var py = 0;
+
+			if (this.pressedKeyLeft) {
+				this.yourAngle -= this.yourRotateSpeed;
+				this.updateClip();
+			}
+			if (this.pressedKeyRight) {
+				this.yourAngle += this.yourRotateSpeed;
+				this.updateClip();
+			}
+			if (this.pressedKeyUp) {
+				var speed = this.yourSpeed / this.fps / this.chipSize;
+				nX = this.yourX + speed * this.eyeX;
+				nY = this.yourY + speed * this.eyeY;
+				px = Math.floor(nX);
+				py = Math.floor(nY);
+				if (this.map[py * this.mapSize + px] != 1) {
+					var cx = nX % 1;
+					var cy = nY % 1;
+					if (cx < 0.1 && this.map[py * this.mapSize + px - 1] == 1) {
+						nX = Math.floor(nX) + 0.1;
+					}
+					if (0.9 < cx && this.map[py * this.mapSize + px + 1] == 1) {
+						nX = Math.floor(nX) + 0.9;
+					}
+					if (cy < 0.1 && this.map[(py - 1) * this.mapSize + px] == 1) {
+						nY = Math.floor(nY) + 0.1;
+					}
+					if (0.9 < cy && this.map[(py + 1) * this.mapSize + px] == 1) {
+						nY = Math.floor(nY) + 0.9;
+					}
+					this.yourX = nX;
+					this.yourY = nY;
+					moved = true;
+				}
+
+			}
+			if (this.pressedKeyDown) {
+				var speed = this.yourSpeed / this.fps / this.chipSize;
+				nX = this.yourX - speed * this.eyeX;
+				nY = this.yourY - speed * this.eyeY;
+				px = Math.floor(nX);
+				py = Math.floor(nY);
+				if (this.map[py * this.mapSize + px] != 1) {
+					var cx = nX % 1;
+					var cy = nY % 1;
+					if (cx < 0.1 && this.map[py * this.mapSize + px - 1] == 1) {
+						nX = Math.floor(nX) + 0.1;
+					}
+					if (0.9 < cx && this.map[py * this.mapSize + px + 1] == 1) {
+						nX = Math.floor(nX) + 0.9;
+					}
+					if (cy < 0.1 && this.map[(py - 1) * this.mapSize + px] == 1) {
+						nY = Math.floor(nY) + 0.1;
+					}
+					if (0.9 < cy && this.map[(py + 1) * this.mapSize + px] == 1) {
+						nY = Math.floor(nY) + 0.9;
+					}
+					this.yourX = nX;
+					this.yourY = nY;
+					moved = true;
+				}
+
+			}
+
+			if (moved) {
+				var position = py * this.mapSize + px;
+				var data = this.map[position];
+				if (this.prePosition != position) {
+					if (this.prePosition) {
+						this.fire('leave', this.preData);
+					}
+					this.fire('enter', data);
+				}
+				this.fire('over', data);
+				this.preData = data;
+				this.prePosition = position;
+			}
+		}
+
+		function updateViewerGrid() {
+			var moved = false;
+			var nX = 0;
+			var nY = 0;
+			var px = 0;
+			var py = 0;
+			var rot = Math.PI / 2;
+
+			if (this.pressedKeyLeft) {
+				this.pressedKeyLeft = false;
+				this.yourAngle -= rot; 
+				this.updateClip();
+			}
+			if (this.pressedKeyRight) {
+				this.pressedKeyRight = false;
+				this.yourAngle += rot;
+				this.updateClip();
+			}
+			if (this.pressedKeyUp) {
+				this.pressedKeyUp = false;
+				nX = this.yourX + this.eyeX;
+				nY = this.yourY + this.eyeY;
+				px = Math.floor(nX);
+				py = Math.floor(nY);
+				if (this.map[py * this.mapSize + px] != 1) {
+					this.yourX = nX;
+					this.yourY = nY;
+					moved = true;
+				}
+
+			}
+			if (this.pressedKeyDown) {
+				this.pressedKeyDown = false;
+				this.yourAngle += Math.PI;
+				this.updateClip();
+			}
+
+			if (moved) {
+				var position = py * this.mapSize + px;
+				var data = this.map[position];
+				if (this.prePosition != position) {
+					if (this.prePosition) {
+						this.fire('leave', this.preData);
+					}
+					this.fire('enter', data);
+				}
+				this.fire('over', data);
+				this.preData = data;
+				this.prePosition = position;
+			}
 		}
 
 	}
