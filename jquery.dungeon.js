@@ -1088,7 +1088,7 @@
 		};
 
 		this.mouseMove = function(_ev) {
-			if (thisMap.mouseDragging) {
+			if (thisMap.currentMoveType == 'normal' && thisMap.mouseDragging) {
 				var x = _ev.offsetX;
 				var y = _ev.offsetY;
 				var dX = x - thisMap.mouseStartX;
