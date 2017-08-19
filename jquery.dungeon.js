@@ -275,6 +275,7 @@
 			for (var y = 0, ny = this.mapSize; y < ny; y++) {
 				for (var x = 0, nx = this.mapSize; x < nx; x++) {
 					if (this.map[y * this.mapSize + x] == pos) {
+						this.updateEvents(x, y);
 						this.yourX = x + 0.5;
 						this.yourY = y + 0.5;
 					}
