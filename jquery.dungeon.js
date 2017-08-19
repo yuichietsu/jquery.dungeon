@@ -615,7 +615,7 @@
 				case 'wizardry':
 					this.yourX = 0.5 + Math.floor(this.yourX);
 					this.yourY = 0.5 + Math.floor(this.yourY);
-					this.yourAngle = Math.PI * Math.floor(this.yourAngle / Math.PI);
+					this.yourAngle = (Math.PI / 2) * Math.round(this.yourAngle / (Math.PI / 2));
 					this.updateClip();
 					this.currentMoveType = 'grid';
 					this.updateViewer = updateViewerGrid;
