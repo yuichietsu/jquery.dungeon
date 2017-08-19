@@ -11,6 +11,7 @@ $(function() {
 		$('#message').html('floor ' + f).fadeIn().delay(1000).fadeOut();
 		map.suspend();
 		$('#dungeon').dungeon('loadMap', 'data/' + f + '.txt', opts);
+		$('#elevator').val(f);
 	}
 
 	$('#dungeon').dungeon({
@@ -51,6 +52,17 @@ $(function() {
 	$('input[name="moveType"]').click(function() {
 		var type = $(this).val();
 		$('#dungeon').dungeon('moveType', type);
+	});
+
+	var html = '';
+	for (var i = 1; i < 100; i++) {
+		html += '<option value="' + i + '">' + i + '</option>';
+	}
+
+	$('#elevator').append(html).change(function() {
+		var f = $(this).val();
+		$('#message').html('floor ' + f).fadeIn().delay(1000).fadeOut();
+		$('#dungeon').dungeon('loadMap', 'data/' + f + '.txt');
 	});
 
 });
@@ -95,5 +107,10 @@ $(function() {
 <div>move type:</div>
 <label><input type="radio" name="moveType" value="grid" checked />Grid</label>
 <label><input type="radio" name="moveType" value="normal" />Normal</label>
+</div>
+<div class="settings">
+<div>floor:</div>
+<select id="elevator">
+</select>
 </div>
 </body></html>
