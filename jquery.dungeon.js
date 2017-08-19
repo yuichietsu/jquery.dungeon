@@ -28,16 +28,7 @@
 		for (y = 0; y < yLen; y++) {
 			var xData = lines[y];
 			for (x = 0; x < xData.length; x++) {
-				c = xData.substr(x, 1);
-				if (c == '*') {
-					mapData[y * mapSize + x] = MAP_TYPE_WALL;
-				} else if (c == '0') {
-					mapData[y * mapSize + x] = MAP_TYPE_START;
-				} else if (c == ' ') {
-					mapData[y * mapSize + x] = MAP_TYPE_WAY;
-				} else {
-					mapData[y * mapSize + x] = c;
-				}
+				mapData[y * mapSize + x] = xData.substr(x, 1);
 			}
 			for (; x < mapSize; x++) {
 				mapData[y * mapSize + x] = MAP_TYPE_WALL;
@@ -107,7 +98,11 @@
 			});
 		},
 
-		'loadMap': function(url, noResume) {
+		'loadMap': function(url, opts) {
+			opts = $.extend({
+				'start': MAP_TYPE_START,
+				'noResume': false
+			}, opts);
 			var that = this;
 			$.ajax({
 				'url': url,
@@ -119,8 +114,8 @@
 						var $this = $(this);
 						var m, id = $this.data('mapId');
 						if (id && (m = maps[id])) {
-							m.loadMap(map.size, map.map);
-							if (! noResume) { m.resume(); }
+							m.loadMap(map.size, map.map, opts.start);
+							if (! opts.noResume) { m.resume(); }
 						}
 					});
 				}
@@ -164,9 +159,9 @@
 	};
 
 	// 定数
-	var MAP_TYPE_WAY = 0;
-	var MAP_TYPE_WALL = 1;
-	var MAP_TYPE_START = 5;
+	var MAP_TYPE_WAY = ' ';
+	var MAP_TYPE_WALL = '*';
+	var MAP_TYPE_START = '0';
 
 	function Map3D(_id) {
 
@@ -241,7 +236,7 @@
 		this.yourRotateSpeed = 10 * Math.PI / 180;
 
 		this.events = {};
-		this.prePosition;
+		this.prePosition = null;
 		this.preData;
 
 		this.bindKeyFlag = false;
@@ -273,13 +268,15 @@
 			this.perspective = this.canvasWidth / 2 / Math.tan(this.yourFovxh);
 		};
 
-		this.loadMap = function(size, map) {
+		this.loadMap = function(size, map, pos) {
+			if (! pos) { pos = MAP_TYPE_START; }
+			this.prePosition = null;
 			this.canvasCache = {};
 			this.mapSize = size;
 			this.map = map;
 			for (var y = 0, ny = this.mapSize; y < ny; y++) {
 				for (var x = 0, nx = this.mapSize; x < nx; x++) {
-					if (this.map[y * this.mapSize + x] == MAP_TYPE_START) {
+					if (this.map[y * this.mapSize + x] == pos) {
 						this.yourX = x + 0.5;
 						this.yourY = y + 0.5;
 						this.yourPreX = Math.floor(this.yourX);
@@ -737,13 +734,9 @@
 						var vx = xx - px;
 						if (Math.abs(vx) < this.clipFar + this.chipSizeTh) {
 							var len = vx * vx + vy * vy;
-							if (len < this.clipFar * this.clipFar
-									&& this.map[y * this.mapSize + x] == 1) {
-								if (-this.chipSizeTh < (vx * this.clipRightY - vy
-										* this.clipRightX)
-										&& -this.chipSizeTh < (-vx
-												* this.clipLeftY + vy
-												* this.clipLeftX)) {
+							if (len < this.clipFar * this.clipFar && this.isWall(x, y)) {
+								if (-this.chipSizeTh < (vx * this.clipRightY - vy * this.clipRightX)
+										&& -this.chipSizeTh < (-vx * this.clipLeftY + vy * this.clipLeftX)) {
 									var block = new Object();
 									block['x'] = x;
 									block['y'] = y;
@@ -792,8 +785,7 @@
 					var north = y * this.chipSize;
 					var south = (y + 1) * this.chipSize;
 
-					if (px < west && x != 0
-							&& this.map[y * this.mapSize + (x - 1)] != 1) {
+					if (px < west && x != 0 && ! this.isWall(x - 1, y)) {
 						// 西の壁
 						var wall = new Object();
 						wall.sx = west;
@@ -805,8 +797,7 @@
 						wall.type = 0;
 						this.visibleObjects.push(wall);
 					}
-					if (east < px && x != this.mapSize - 1
-							&& this.map[y * this.mapSize + (x + 1)] != 1) {
+					if (east < px && x != this.mapSize - 1 && ! this.isWall(x + 1, y)) {
 						// 東の壁
 						var wall = new Object();
 						wall.sx = east;
@@ -818,8 +809,7 @@
 						wall.type = 1;
 						this.visibleObjects.push(wall);
 					}
-					if (south < py && y != this.mapSize - 1
-							&& this.map[(y + 1) * this.mapSize + x] != 1) {
+					if (south < py && y != this.mapSize - 1 && ! this.isWall(x, y + 1)) {
 						// 南の壁
 						var wall = new Object();
 						wall.sx = west;
@@ -831,8 +821,7 @@
 						wall.type = 2;
 						this.visibleObjects.push(wall);
 					}
-					if (py < north && y != 0
-							&& this.map[(y - 1) * this.mapSize + x] != 1) {
+					if (py < north && y != 0 && ! this.isWall(x, y - 1)) {
 						// 北の壁
 						var wall = new Object();
 						wall.sx = west;
@@ -927,13 +916,13 @@
 										* renderingSize + offsetY, renderingSize,
 										renderingSize);
 								break;
+							case MAP_TYPE_WALL:
+								break;
 							default:
-								if (typeof value == 'string') {
-									this.ctx.fillStyle = 'rgb(0,255,0)';
-									this.ctx.fillRect(x * renderingSize + offsetX,
-											y * renderingSize + offsetY,
-											renderingSize, renderingSize);
-								}
+								this.ctx.fillStyle = 'rgb(0,255,0)';
+								this.ctx.fillRect(x * renderingSize + offsetX,
+										y * renderingSize + offsetY,
+										renderingSize, renderingSize);
 							}
 						}
 					}
@@ -1021,10 +1010,8 @@
 		this.updateEvents = function(px, py) {
 			var position = py * this.mapSize + px;
 			var data = this.map[position];
-			if (this.prePosition != position) {
-				if (this.prePosition) {
-					this.fire('leave', this.preData);
-				}
+			if (this.prePosition !== null && this.prePosition != position) {
+				this.fire('leave', this.preData);
 				this.fire('enter', data);
 			}
 			this.fire('over', data);
@@ -1152,6 +1139,10 @@
 			thisMap.bindLoop();
 		};
 
+		this.isWall = function(x, y) {
+			return this.map[y * this.mapSize + x] == MAP_TYPE_WALL;
+		};
+
 		function drawGroundNormal() {
 			var grad = this.ctx.createLinearGradient(0, 0, 0, this.canvasHeight);
 			grad.addColorStop(0, '#aaa');
@@ -1188,12 +1179,10 @@
 		}
 
 		function updateViewerNormal() {
-			var moved = false;
 			var nX = 0;
 			var nY = 0;
 			var px = 0;
 			var py = 0;
-
 			if (this.pressedKeyLeft) {
 				this.yourAngle -= this.yourRotateSpeed;
 				this.updateClip();
@@ -1202,74 +1191,41 @@
 				this.yourAngle += this.yourRotateSpeed;
 				this.updateClip();
 			}
-			if (this.pressedKeyUp) {
+			if (this.pressedKeyUp || this.pressedKeyDown) {
 				var speed = this.yourSpeed / this.fps / this.chipSize;
-				nX = this.yourX + speed * this.eyeX;
-				nY = this.yourY + speed * this.eyeY;
+				var forward = this.pressedKeyUp ? 1 : -1;
+				nX = this.yourX + speed * this.eyeX * forward;
+				nY = this.yourY + speed * this.eyeY * forward;
 				px = Math.floor(nX);
 				py = Math.floor(nY);
-				if (this.map[py * this.mapSize + px] != 1) {
+				if (! this.isWall(px, py)) {
 					var cx = nX % 1;
 					var cy = nY % 1;
-					if (cx < 0.1 && this.map[py * this.mapSize + px - 1] == 1) {
+					if (cx < 0.1 && this.isWall(px - 1, py)) {
 						nX = Math.floor(nX) + 0.1;
 					}
-					if (0.9 < cx && this.map[py * this.mapSize + px + 1] == 1) {
+					if (0.9 < cx && this.isWall(px + 1, py)) {
 						nX = Math.floor(nX) + 0.9;
 					}
-					if (cy < 0.1 && this.map[(py - 1) * this.mapSize + px] == 1) {
+					if (cy < 0.1 && this.isWall(px, py - 1)) {
 						nY = Math.floor(nY) + 0.1;
 					}
-					if (0.9 < cy && this.map[(py + 1) * this.mapSize + px] == 1) {
+					if (0.9 < cy && this.isWall(px, py + 1)) {
 						nY = Math.floor(nY) + 0.9;
 					}
 					this.yourX = nX;
 					this.yourY = nY;
-					moved = true;
+					this.updateEvents(px, py);
 				}
-
-			}
-			if (this.pressedKeyDown) {
-				var speed = this.yourSpeed / this.fps / this.chipSize;
-				nX = this.yourX - speed * this.eyeX;
-				nY = this.yourY - speed * this.eyeY;
-				px = Math.floor(nX);
-				py = Math.floor(nY);
-				if (this.map[py * this.mapSize + px] != 1) {
-					var cx = nX % 1;
-					var cy = nY % 1;
-					if (cx < 0.1 && this.map[py * this.mapSize + px - 1] == 1) {
-						nX = Math.floor(nX) + 0.1;
-					}
-					if (0.9 < cx && this.map[py * this.mapSize + px + 1] == 1) {
-						nX = Math.floor(nX) + 0.9;
-					}
-					if (cy < 0.1 && this.map[(py - 1) * this.mapSize + px] == 1) {
-						nY = Math.floor(nY) + 0.1;
-					}
-					if (0.9 < cy && this.map[(py + 1) * this.mapSize + px] == 1) {
-						nY = Math.floor(nY) + 0.9;
-					}
-					this.yourX = nX;
-					this.yourY = nY;
-					moved = true;
-				}
-
-			}
-
-			if (moved) {
-				this.updateEvents(px, py);
 			}
 		}
 
 		function updateViewerGrid() {
-			var moved = false;
 			var nX = 0;
 			var nY = 0;
 			var px = 0;
 			var py = 0;
 			var rot = Math.PI / 2;
-
 			if (this.pressedKeyLeft) {
 				this.pressedKeyLeft = false;
 				this.yourAngle -= rot; 
@@ -1280,26 +1236,22 @@
 				this.yourAngle += rot;
 				this.updateClip();
 			}
+			if (this.pressedKeyDown) {
+				this.pressedKeyDown = false;
+				this.yourAngle += Math.PI;
+				this.updateClip();
+			}
 			if (this.pressedKeyUp) {
 				this.pressedKeyUp = false;
 				nX = this.yourX + this.eyeX;
 				nY = this.yourY + this.eyeY;
 				px = Math.floor(nX);
 				py = Math.floor(nY);
-				if (this.map[py * this.mapSize + px] != 1) {
+				if (! this.isWall(px, py)) {
 					this.yourX = nX;
 					this.yourY = nY;
-					moved = true;
+					this.updateEvents(px, py);
 				}
-			}
-			if (this.pressedKeyDown) {
-				this.pressedKeyDown = false;
-				this.yourAngle += Math.PI;
-				this.updateClip();
-			}
-
-			if (moved) {
-				this.updateEvents(px, py);
 			}
 		}
 
