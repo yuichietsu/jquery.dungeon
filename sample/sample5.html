@@ -1,0 +1,99 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery.dungeon.js"></script>
+<script>
+$(function() {
+	var floor = 1;
+	
+	function changeFloor(map, f, opts) {
+		$('#message').html('floor ' + f).fadeIn().delay(1000).fadeOut();
+		map.suspend();
+		$('#dungeon').dungeon('loadMap', 'data/' + f + '.txt', opts);
+	}
+
+	$('#dungeon').dungeon({
+		'debug' : true,
+		'width': 480,
+		'height': 320,
+		'url': 'data/1.txt',
+		'drawType' : 'wire',
+		'moveType' : 'grid',
+		'events' : {
+			'enter' : function(map, data) {
+				switch(data) {
+				case '0':
+					if (1 < floor) {
+						changeFloor(map, --floor, {'start':'9'});
+					}
+					break;
+				case '9':
+					if (floor < 1000) {
+						changeFloor(map, ++floor);
+					}
+					else {
+						map.suspend();
+						alert('goal');
+						map.resume();
+					}
+					break;
+				}
+			}
+		}
+	});
+
+	$('input[name="drawType"]').click(function() {
+		var type = $(this).val();
+		$('#dungeon').dungeon('drawType', type);
+	});
+
+	$('input[name="moveType"]').click(function() {
+		var type = $(this).val();
+		$('#dungeon').dungeon('moveType', type);
+	});
+
+});
+</script>
+<style>
+#message
+{
+	position: fixed;
+	left: 10;
+	top: 10;
+	padding: 10;
+	background: #fff;
+	color: #000;
+	opacity: 0.8;
+	display: none;
+}
+.settings 
+{
+	display: flex;
+}
+.settings > *
+{
+	flex-basis: 100px;
+}
+.settings > div 
+{
+	padding-right: 10px;
+	text-align: right;
+}
+</style>
+</head>
+<body>
+<div id="message"></div>
+<div id="dungeon">
+</div>
+<div class="settings">
+<div>draw type:</div>
+<label><input type="radio" name="drawType" value="wire" checked />Wireframe</label>
+<label><input type="radio" name="drawType" value="normal" />Normal</label>
+</div>
+<div class="settings">
+<div>move type:</div>
+<label><input type="radio" name="moveType" value="grid" checked />Grid</label>
+<label><input type="radio" name="moveType" value="normal" />Normal</label>
+</div>
+</body></html>
