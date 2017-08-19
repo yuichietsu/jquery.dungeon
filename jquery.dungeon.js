@@ -6,7 +6,7 @@
 		'width' : 640,
 		'height' : 480,
 		'debug' : false,
-		'wrapper' : null,
+		'url' : null,
 		'drawType' : 'normal',
 		'moveType' : 'normal',
 		'events' : {}
@@ -62,13 +62,12 @@
 				var $this = $(this);
 				var map3d;
 				var id = $this.data('mapId');
+				var data, map;
+				var c;
 				if (id) {
 					$('#' + id).remove();
 					delete maps[id];
 				}
-				var data = $this.val();
-				var map = convertToMap(data);
-				var c;
 				c = $('<canvas />');
 				do {
 					id = 'dungeon_' + canvasIndex++;
@@ -77,23 +76,56 @@
 				c.attr('tabindex', 0);
 				c.attr('width', opts.width);
 				c.attr('height', opts.height);
-				if (opts.wrapper) {
-					$(opts.wrapper).html('').append(c);
-				} else {
-					$this.after(c);
-				}
 				c.hide();
 				map3d = new Map3D(id);
 				map3d.isDebug = opts.debug;
 				map3d.events = opts.events;
 				map3d.setDrawType(opts.drawType);
 				map3d.setMoveType(opts.moveType);
-				map3d.init();
-				map3d.loadMap(map.size, map.map);
-				c.fadeIn('fast');
 				maps[id] = map3d;
 				$this.data('mapId', id);
+				if (opts.url) {
+					$this.append(c);
+					map3d.init();
+					$.ajax({
+						'url': opts.url,
+						'mimeType': 'text/plain',
+						'dataType': 'text',
+						'success': function(data) {
+							map = convertToMap(data);
+							map3d.loadMap(map.size, map.map);
+							c.fadeIn('fast');
+						}
+					});
+				} else {
+					$this.after(c);
+					map3d.init();
+					map = convertToMap($this.val());
+					map3d.loadMap(map.size, map.map);
+					c.fadeIn('fast');
+				}
 			});
+		},
+
+		'loadMap': function(url, noResume) {
+			var that = this;
+			$.ajax({
+				'url': url,
+				'mimeType': 'text/plain',
+				'dataType': 'text',
+				'success': function(data) {
+					var map = convertToMap(data);
+					that.each(function() {
+						var $this = $(this);
+						var m, id = $this.data('mapId');
+						if (id && (m = maps[id])) {
+							m.loadMap(map.size, map.map);
+							if (! noResume) { m.resume(); }
+						}
+					});
+				}
+			});
+			return this;
 		},
 
 		'drawType': function(type) {
@@ -212,16 +244,7 @@
 		this.prePosition;
 		this.preData;
 
-		// データローダー
-		this.loader = {
-			loadMap : function() {
-			}
-		};
-
 		this.bindKeyFlag = false;
-		this.setDataLoader = function(_loader) {
-			this.loader = _loader;
-		};
 
 		// キャンバス初期化
 		this.init = function() {
@@ -251,6 +274,7 @@
 		};
 
 		this.loadMap = function(size, map) {
+			this.canvasCache = {};
 			this.mapSize = size;
 			this.map = map;
 			for (var y = 0, ny = this.mapSize; y < ny; y++) {
