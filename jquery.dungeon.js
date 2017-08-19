@@ -224,8 +224,6 @@
 		this.mouseDragging = false;
 
 		// 視点
-		this.yourPreX = -1;
-		this.yourPreY = -1;
 		this.yourX = -1;
 		this.yourY = -1;
 		this.yourAngle = 0;
@@ -279,8 +277,6 @@
 					if (this.map[y * this.mapSize + x] == pos) {
 						this.yourX = x + 0.5;
 						this.yourY = y + 0.5;
-						this.yourPreX = Math.floor(this.yourX);
-						this.yourPreY = Math.floor(this.yourY);
 					}
 				}
 			}
@@ -617,6 +613,10 @@
 				case 'grid':
 				case 'wiz':
 				case 'wizardry':
+					this.yourX = 0.5 + Math.floor(this.yourX);
+					this.yourY = 0.5 + Math.floor(this.yourY);
+					this.yourAngle = Math.PI * Math.floor(this.yourAngle / Math.PI);
+					this.updateClip();
 					this.currentMoveType = 'grid';
 					this.updateViewer = updateViewerGrid;
 					break;	
