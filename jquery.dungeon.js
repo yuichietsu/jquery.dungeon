@@ -73,6 +73,7 @@
 				map3d.events = opts.events;
 				map3d.setDrawType(opts.drawType);
 				map3d.setMoveType(opts.moveType);
+				map3d.setColor(opts.color);
 				maps[id] = map3d;
 				$this.data('mapId', id);
 				if (opts.url) {
@@ -213,6 +214,12 @@
 		this.drawGroundImpl = drawGroundNormal;
 		this.drawWallColorImpl = drawWallColorNormal;
 		this.drawWallImpl = drawWallNormal;
+
+		this.color = {
+			'wall' : [255,255,255],
+			'ceiling' : [170,170,170],
+			'floor' : [187,170,170]
+		};
 
 		// 操作
 		this.pressedKeyUp = false;
@@ -1144,11 +1151,42 @@
 			return this.map[y * this.mapSize + x] == MAP_TYPE_WALL;
 		};
 
+		this.colorCeiling = function() {
+			return 'rgb(' + this.color.ceiling[0] + ',' + this.color.ceiling[1] + ',' + this.color.ceiling[2] + ')';
+		};
+
+		this.colorFloor = function() {
+			return 'rgb(' + this.color.floor[0] + ',' + this.color.floor[1] + ',' + this.color.floor[2] + ')';
+		};
+
+		this.colorWall = function(f) {
+			return 'rgb(' + Math.round(this.color.wall[0] * f) + ',' + Math.round(this.color.wall[1] * f) + ',' + Math.round(this.color.wall[2] * f) + ')';
+		};
+
+		this.setColor = function(color) {
+			if (color) {
+				if (Array.isArray(color)) {
+					var c = 0xaa / 0xff;
+					var f = 0xbb / 0xff;
+					this.color = {
+						'wall' : color,
+						'ceiling' : [Math.round(color[0] * c), Math.round(color[1] * c), Math.round(color[2] * c)],
+						'floor' : [Math.round(color[0] * f), Math.round(color[1] * f), Math.round(color[2] * f)]
+					};
+				}
+				else {
+					if (Array.isArray(color.ceiling)) { this.color.ceiling = color.ceiling; }
+					if (Array.isArray(color.floor)) { this.color.floor = color.floor; }
+					if (Array.isArray(color.wall)) { this.color.wall = color.wall; }
+				}
+			}
+		};
+
 		function drawGroundNormal() {
 			var grad = this.ctx.createLinearGradient(0, 0, 0, this.canvasHeight);
-			grad.addColorStop(0, '#aaa');
+			grad.addColorStop(0, this.colorCeiling());
 			grad.addColorStop(0.5, '#000');
-			grad.addColorStop(1, '#baa');
+			grad.addColorStop(1, this.colorFloor());
 			this.ctx.fillStyle = grad;
 		}
 
@@ -1157,11 +1195,11 @@
 		}
 
 		function drawWallColorNormal(fx, sx, fdepth, sdepth) {
-			var fcol = Math.floor(255 * (1 - (fdepth - this.clipNear) / (this.clipFar - this.clipNear)));
-			var scol = Math.floor(255 * (1 - (sdepth - this.clipNear) / (this.clipFar - this.clipNear)));
+			var fcol = 1 - (fdepth - this.clipNear) / (this.clipFar - this.clipNear);
+			var scol = 1 - (sdepth - this.clipNear) / (this.clipFar - this.clipNear);
 			var grad = this.ctx.createLinearGradient(fx, 0, sx, 0);
-			grad.addColorStop(0, 'rgb(' + fcol + ',' + fcol + ',' + fcol + ')');
-			grad.addColorStop(1, 'rgb(' + scol + ',' + scol + ',' + scol + ')');
+			grad.addColorStop(0, this.colorWall(fcol));
+			grad.addColorStop(1, this.colorWall(scol));
 			this.ctx.fillStyle = grad;
 		}
 
